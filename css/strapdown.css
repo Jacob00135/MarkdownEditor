@@ -160,7 +160,7 @@ projection {
 }
 
 /* Put a border around prettyprinted code snippets. */
-pre {
+.markdown-preview pre {
   padding: 6px;
   border: 1px solid #888;
   border-radius: 4px;
@@ -195,8 +195,14 @@ li.L9 {
 }
 
 /* 表格框线 */
-table {
+.markdown-preview table {
   border-color: #b7b7b7!important;
+}
+.markdown-preview table tr:nth-of-type(2n + 1) {
+  background-color: #e7e7e7;
+}
+.markdown-preview table tr:nth-of-type(2n) {
+  background-color: transparent;
 }
 
 /* 代码字体 */
@@ -211,4 +217,34 @@ table {
 }
 .no-decoration:hover {
   text-decoration: underline;
+}
+
+/* 目录样式 */
+.markdown-preview ul.toc {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+/* 标题样式 */
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+/* 内嵌代码样式 */
+.markdown-preview code.prettyprint.lang-.prettyprinted {
+  padding: 2px 6px;
+  border: 1px solid #b7b7b7;
+  border-radius: 4px;
+}
+
+/* 嵌入iframe样式 */
+.markdown-preview iframe {
+  width: 100%;
+  height: 100%;
 }
