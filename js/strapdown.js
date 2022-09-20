@@ -446,34 +446,47 @@ var PR=win['PR']={'createSimpleLexer':createSimpleLexer,'registerLangHandler':re
   
 
   // 改写marked，添加渲染目录的功能
-  // marked = function (rawMarkdown) {
-  //   const renderMarkdown = marked(rawMarkdown);
+  window.myMarked = function (rawMarkdown) {
+    // 当原Markdown文本中并不需要渲染目录时，直接返回渲染后的HTML
+    let html = marked(rawMarkdown);  // 没有添加目录时渲染的Markdown文本
+    if (html.indexOf('<p>[TOC]</p>') < 0) {
+      return html;
+    }
 
-  //   // 为h1-h6标签添加id，以使得目录能定位到标题
-  //   const ul = document.createElement('ul');
-  //   const htmlObj = {
-  //     'h1': [],
-  //     'h2': [],
-  //     'h3': [],
-  //     'h4': [],
-  //     'h5': [],
-  //     'h6': []
-  //   };
-  //   renderMarkdown.children
-  //   // Object.keys(htmlObj).forEach((k) => {
+    // 当原Markdown文本中需要渲染目录时，以下代码的操作都是生成目录
+    const catalogueMarkdownArray = ['\n'];  // 保存生成的目录的Markdown原文本
+    const reg = /#{1,6} ([\s\S]*?)\n/g;  // 正则匹配原Markdown文本中的标题
 
-  //   // });
-  //   // ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach((v) => {
-  //   //   preview.querySelectorAll(v).forEach((node) => {
-  //   //     node.setAttribute('id', node.innerHTML);
-  //   //   });
-  //   // });
+    // 在Markdown原文本中搜索标题，并根据标题内容生成目录中的链接Markdown原文本
+    let result = reg.exec(rawMarkdown);  // 正则匹配结果
+    while (result !== null) {
+      let titleLevel = result[0].split(' ', 1)[0].length;  // 标题级别
+      let rawTitle = result[1];  // 标题略去前缀中的#号、#号后的1个空格、最后的\n符之后，余下的内容
+      let titleText = transformToNode(marked(rawTitle)).innerText;  // 在目录中，显示的标题的文本，也是每个标题的id属性值
 
-  //   // 添加目录
-  //   marked();
+      // 生成空格，空格数 = 2 * (标题级别 - 1)
+      for (let i = 0; i < titleLevel - 1; i++) {
+        catalogueMarkdownArray.push('  ');
+      }
 
-  //   return renderMarkdown;
-  // }
+      // 生成目录中，标题的链接的Markdown语法
+      catalogueMarkdownArray.push('- [');
+      catalogueMarkdownArray.push(rawTitle);
+      catalogueMarkdownArray.push('](#');
+      catalogueMarkdownArray.push(titleText);
+      catalogueMarkdownArray.push(')\n');
+
+      // 为下一次while迭代作准备
+      result = reg.exec(rawMarkdown);
+    }
+    catalogueMarkdownArray.push('\n');
+
+    // 添加目录到html
+    const catalogueHtml = marked(catalogueMarkdownArray.join('')).replace('<ul>', '<ul class="toc">');
+    html = html.replace(/<p>\[TOC\]<\/p>/g, catalogueHtml);
+
+    return html;
+  }
 
   window.strapdown = {};
   window.strapdown.renderMarkdown = function (container) {
@@ -488,7 +501,7 @@ var PR=win['PR']={'createSimpleLexer':createSimpleLexer,'registerLangHandler':re
 
     // 渲染markdown文本
     const rawMarkdown = edit.value || edit.textContent || edit.innerText;
-    preview.innerHTML = marked(rawMarkdown);
+    preview.innerHTML = myMarked(rawMarkdown);
 
     // 美化
     var codeEls = document.getElementsByTagName('code');
@@ -506,27 +519,14 @@ var PR=win['PR']={'createSimpleLexer':createSimpleLexer,'registerLangHandler':re
       tableEl.className = 'table table-striped table-bordered';
     }
 
-    // 渲染目录
-    const catalogueMarkdownArray = ['\n'];
+    // 为了目录有跳转效果，为每一个标题标签添加id
     const hArray = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
     for (let i = 0; i < preview.children.length; i++) {
       let node = preview.children[i];
-
-      if (hArray.indexOf(node.nodeName.toLowerCase()) < 0) {
-        continue;
+      if (hArray.indexOf(node.nodeName.toLowerCase()) >= 0) {
+        node.setAttribute('id', node.innerText);
       }
-
-      node.setAttribute('id', node.innerHTML);
-
-      const level = parseInt(node.nodeName.charAt(1));
-      for (let j = 0; j < 2 * (level - 1); j++) {
-        catalogueMarkdownArray.push(' ');
-      }
-      catalogueMarkdownArray.push('- [' + node.innerHTML + '](#' + node.innerHTML + ')\n');
     }
-    catalogueMarkdownArray.push('\n');
-    const catalogueHtml = marked(catalogueMarkdownArray.join('')).replace('<ul>', '<ul class="toc">');
-    preview.innerHTML = preview.innerHTML.replace(/<p>\[TOC\]<\/p>/g, catalogueHtml);
 
     // 美化目录中的a链接
     preview.querySelectorAll('ul.toc a').forEach((a) => {
