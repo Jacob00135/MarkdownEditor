@@ -18,3 +18,12 @@ function transformToNode (html) {
     div.innerHTML = html;
     return div.children[0];
 }
+
+function downloadFile (fileName, fileContent) {
+    const file = new File([fileContent], fileName, {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}

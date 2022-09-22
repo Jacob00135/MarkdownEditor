@@ -150,13 +150,51 @@
 
         // 下载按钮点击事件
         document.getElementById('download').addEventListener('click', function (e) {
-            const fileContent = document.querySelector('#editor-panel .markdown-edit').value;
-            const file = new File([fileContent], OpenMarkdownFile.fileName, {type: 'text/plain'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(file);
-            a.download = OpenMarkdownFile.fileName;
-            a.click();
-            URL.revokeObjectURL(a.href);
+            downloadFile(
+                OpenMarkdownFile.fileName,
+                document.querySelector('#editor-panel .markdown-edit').value
+            );
+        });
+
+        // 导出按钮点击事件
+        document.getElementById('export-html').addEventListener('click', function (e) {
+            // html模板
+            const htmlTemplate = `<!DOCTYPE html>
+            <html lang="zh-CN">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport"
+                    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+                <meta http-equiv="X-UA-Compatible" content="ie=edge">
+                <title>{{ title }}</title>
+                <style>
+                    body {
+                        background-color: #f4f4f4;
+                    }
+                    {{ css }}
+                </style>
+            </head>
+            <body>
+                {{ body }}
+            </body>
+            </html>`;
+
+            // 获取title
+            const title = OpenMarkdownFile.fileName.slice(0, OpenMarkdownFile.fileName.length - 3);
+
+            // 获取body
+            const body = document.querySelector('#editor-panel .markdown-preview').innerHTML;
+
+            // 获取css
+            // TODO 待实现：获取bootstrap.min.css和strapdown.css文件内容
+            const css = '';
+
+            // 导出html文件
+            const html = htmlTemplate.replace('{{ title }}', title)
+                                     .replace('{{ css }}', css)
+                                     .replace('{{ body }}', body);
+            console.log(html);
+            // downloadFile(title + '.html', html);
         });
     }
 
