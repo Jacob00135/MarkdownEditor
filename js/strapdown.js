@@ -509,8 +509,9 @@ var PR=win['PR']={'createSimpleLexer':createSimpleLexer,'registerLangHandler':re
       if (replaceArray[i - 1][1] < catalogueHtml.length) {
         newCatalogueHtml.push(catalogueHtml.slice(replaceArray[i - 1][1]));
       }
+      html = html.replace(/<p>\[TOC\]<\/p>/g, newCatalogueHtml.join(''));
     }
-    html = html.replace(/<p>\[TOC\]<\/p>/g, newCatalogueHtml.join(''));
+    html = html.replace(/<p>\[TOC\]<\/p>/g, catalogueHtml);
 
     return html;
   }
