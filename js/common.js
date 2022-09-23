@@ -27,3 +27,11 @@ function downloadFile (fileName, fileContent) {
     a.click();
     URL.revokeObjectURL(a.href);
 }
+
+function regExec (reg, string, callback) {
+    let result = reg.exec(string);
+    while (result !== null) {
+        callback(result);
+        result = reg.exec(string);
+    }
+}

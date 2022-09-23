@@ -455,14 +455,14 @@ var PR=win['PR']={'createSimpleLexer':createSimpleLexer,'registerLangHandler':re
 
     // 当原Markdown文本中需要渲染目录时，以下代码的操作都是生成目录
     const catalogueMarkdownArray = ['\n'];  // 保存生成的目录的Markdown原文本
-    const reg = /#{1,6} ([\s\S]*?)\n/g;  // 正则匹配原Markdown文本中的标题
+    // const reg = /#{1,6} ([\s\S]*?)\n/g;
+    const reg = /<h[1-6]>([\s\S]*?)<\/h[1-6]>/g;  // 正则匹配原Markdown文本中的标题
 
     // 在Markdown原文本中搜索标题，并根据标题内容生成目录中的链接Markdown原文本
-    let result = reg.exec(rawMarkdown);  // 正则匹配结果
-    while (result !== null) {
-      let titleLevel = result[0].split(' ', 1)[0].length;  // 标题级别
-      let rawTitle = result[1];  // 标题略去前缀中的#号、#号后的1个空格、最后的\n符之后，余下的内容
-      let titleText = transformToNode(marked(rawTitle)).innerText;  // 在目录中，显示的标题的文本，也是每个标题的id属性值
+    regExec(/<h[1-6]>([\s\S]*?)<\/h[1-6]>/g, html, function (result) {
+      const titleLevel = parseInt(result[0][2]);  // 标题级别
+      const rawTitle = result[1];  // 标题略去前缀中的#号、#号后的1个空格、最后的\n符之后，余下的内容
+      const titleText = transformToNode(marked(rawTitle)).innerText;  // 在目录中，显示的标题的文本，也是每个标题的id属性值
 
       // 生成空格，空格数 = 2 * (标题级别 - 1)
       for (let i = 0; i < titleLevel - 1; i++) {
@@ -475,15 +475,42 @@ var PR=win['PR']={'createSimpleLexer':createSimpleLexer,'registerLangHandler':re
       catalogueMarkdownArray.push('](#');
       catalogueMarkdownArray.push(titleText);
       catalogueMarkdownArray.push(')\n');
-
-      // 为下一次while迭代作准备
-      result = reg.exec(rawMarkdown);
-    }
+    })
     catalogueMarkdownArray.push('\n');
 
-    // 添加目录到html
-    const catalogueHtml = marked(catalogueMarkdownArray.join('')).replace('<ul>', '<ul class="toc">');
-    html = html.replace(/<p>\[TOC\]<\/p>/g, catalogueHtml);
+    // 修补原marked渲染方式渲染链接时的缺陷，并添加目录的HTML到返回值中
+    let catalogueHtml = marked(catalogueMarkdownArray.join('')).replace('<ul>', '<ul class="toc">');
+    const replaceArray = [];
+    regExec(/<li>(\[[\s\S]+?)</g, catalogueHtml, function (result) {
+      const start = result.index + 4;
+      const end = start + result[1].length;
+      const linkMarkdown = catalogueHtml.slice(start, end);
+      const execResult = /\[([\s\S]*)\]\(([\s\S]*)\)/g.exec(linkMarkdown);
+      const linkHtml = '<a href="' + execResult[2] + '">' + execResult[1] + '</a>';
+      replaceArray.push([start, end, linkHtml]);
+    });
+    const newCatalogueHtml = [];
+    if (replaceArray.length > 0) {
+      let i;
+      for (i = 0; i < replaceArray.length; i++) {
+        let start;
+        let end;
+        if (i == 0) {
+          start = 0;
+          end = replaceArray[i][0];
+        } else {
+          start = replaceArray[i - 1][1];
+          end = replaceArray[i][0];
+        }
+        let linkHtml = replaceArray[i][2];
+        newCatalogueHtml.push(catalogueHtml.slice(start, end));
+        newCatalogueHtml.push(linkHtml);
+      }
+      if (replaceArray[i - 1][1] < catalogueHtml.length) {
+        newCatalogueHtml.push(catalogueHtml.slice(replaceArray[i - 1][1]));
+      }
+    }
+    html = html.replace(/<p>\[TOC\]<\/p>/g, newCatalogueHtml.join(''));
 
     return html;
   }
